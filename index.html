@@ -1,66 +1,204 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard Sell-Out</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      background:#0b0f1a;
-      color:white;
-      font-family: Arial;
-      text-align:center;
-    }
-    h1{
-      color:#FFD700;
-      margin-top:40px;
-    }
-    .ok{color:#00ff9c;}
-  </style>
+<meta charset="UTF-8">
+<title>Dashboard Sell-Out PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  background:#0b0f1a;
+  color:white;
+  font-family: Arial;
+  margin:0;
+}
+
+h1 {
+  text-align:center;
+  color:#FFD700;
+  margin-top:20px;
+}
+
+.container {
+  width:90%;
+  margin:auto;
+}
+
+.kpis {
+  display:flex;
+  justify-content:space-around;
+  margin-top:30px;
+}
+
+.card {
+  background:#111827;
+  padding:20px;
+  border-radius:10px;
+  width:30%;
+  text-align:center;
+}
+
+.card h3 {
+  color:#00ff9c;
+}
+
+.filters {
+  margin-top:30px;
+  text-align:center;
+}
+
+select {
+  padding:10px;
+  border-radius:5px;
+}
+
+.table {
+  margin-top:30px;
+  width:100%;
+  border-collapse:collapse;
+}
+
+.table th, .table td {
+  border:1px solid #333;
+  padding:10px;
+  text-align:center;
+}
+
+</style>
 </head>
 
 <body>
 
 <h1>CATEGORY MANAGEMENT</h1>
 
-<div id="status">Cargando datos...</div>
+<div class="container">
 
-<div id="dashboard" style="display:none;">
-  <h2 class="ok">Dashboard listo 🚀</h2>
-  <div id="kpis"></div>
+  <!-- FILTROS -->
+  <div class="filters">
+    <label>Filtrar por categoría:</label>
+    <select id="filtroCategoria">
+      <option value="ALL">Todas</option>
+    </select>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="card">
+      <h3>Venta 2025</h3>
+      <div id="kpi2025">-</div>
+    </div>
+
+    <div class="card">
+      <h3>Venta 2026</h3>
+      <div id="kpi2026">-</div>
+    </div>
+
+    <div class="card">
+      <h3>Crecimiento</h3>
+      <div id="kpiGrowth">-</div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <table class="table" id="tabla">
+    <thead>
+      <tr>
+        <th>Categoría</th>
+        <th>Venta 2025</th>
+        <th>Venta 2026</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
 </div>
 
 <script>
-async function cargarDatos(){
-  try{
 
-    const r25 = await fetch('resumen_2025.json');
-    const r26 = await fetch('resumen_2026.json');
+let data25 = [];
+let data26 = [];
 
-    const data25 = await r25.json();
-    const data26 = await r26.json();
+async function cargarDatos() {
+  const r25 = await fetch('resumen_2025.json');
+  const r26 = await fetch('resumen_2026.json');
 
-    console.log("Datos cargados OK");
+  data25 = await r25.json();
+  data26 = await r26.json();
 
-    const total25 = data25.reduce((a,b)=>a + (b.VENTA||0),0);
-    const total26 = data26.reduce((a,b)=>a + (b.VENTA||0),0);
+  cargarFiltros();
+  render();
+}
 
-    document.getElementById("status").style.display="none";
-    document.getElementById("dashboard").style.display="block";
+function cargarFiltros(){
+  const categorias = [...new Set(data25.map(d => d.CATEGORIA))];
 
-    document.getElementById("kpis").innerHTML = `
-      <p>Venta 2025: ${total25.toLocaleString()}</p>
-      <p>Venta 2026: ${total26.toLocaleString()}</p>
+  const select = document.getElementById("filtroCategoria");
+
+  categorias.forEach(c => {
+    const option = document.createElement("option");
+    option.value = c;
+    option.textContent = c;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", render);
+}
+
+function render(){
+
+  const filtro = document.getElementById("filtroCategoria").value;
+
+  let f25 = data25;
+  let f26 = data26;
+
+  if(filtro !== "ALL"){
+    f25 = data25.filter(d => d.CATEGORIA === filtro);
+    f26 = data26.filter(d => d.CATEGORIA === filtro);
+  }
+
+  const total25 = f25.reduce((a,b)=>a + (b.VENTA||0),0);
+  const total26 = f26.reduce((a,b)=>a + (b.VENTA||0),0);
+
+  const growth = ((total26 - total25) / total25) * 100;
+
+  document.getElementById("kpi2025").innerText = total25.toLocaleString();
+  document.getElementById("kpi2026").innerText = total26.toLocaleString();
+  document.getElementById("kpiGrowth").innerText = growth.toFixed(1) + "%";
+
+  renderTabla(f25, f26);
+}
+
+function renderTabla(f25, f26){
+
+  const tbody = document.querySelector("#tabla tbody");
+  tbody.innerHTML = "";
+
+  const categorias = [...new Set(f25.map(d => d.CATEGORIA))];
+
+  categorias.forEach(cat => {
+
+    const v25 = f25
+      .filter(d => d.CATEGORIA === cat)
+      .reduce((a,b)=>a + (b.VENTA||0),0);
+
+    const v26 = f26
+      .filter(d => d.CATEGORIA === cat)
+      .reduce((a,b)=>a + (b.VENTA||0),0);
+
+    const row = `
+      <tr>
+        <td>${cat}</td>
+        <td>${v25.toLocaleString()}</td>
+        <td>${v26.toLocaleString()}</td>
+      </tr>
     `;
 
-  }catch(e){
-    document.getElementById("status").innerHTML="Error cargando datos";
-    console.error(e);
-  }
+    tbody.innerHTML += row;
+  });
 }
 
 cargarDatos();
+
 </script>
 
 </body>
