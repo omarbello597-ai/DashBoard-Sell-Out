@@ -892,7 +892,7 @@ function getNumDays(){
 }
 
 function combinarYProcesar(){
-  if(!_rows26||!_rows25){ // alert desactivado; return; }
+  if(!_rows26||!_rows25){ alert('Carga ambos archivos primero'); return; }
   const st = document.getElementById('upload-status');
   st.style.color = '#F5C800';
   st.textContent = '⏳ Combinando ' + (_rows26.length+_rows25.length).toLocaleString() + ' filas...';
@@ -2618,44 +2618,39 @@ function zShowEmpty(){
 </script>
 
 <script>
-window.addEventListener('load', async () => {
-  try {
+(async function(){
+  try{
     const r25 = await fetch('resumen_2025.json');
     const r26 = await fetch('resumen_2026.json');
 
-    window.resumen_25 = await r25.json();
-    window.resumen_26 = await r26.json();
+    const resumen_25 = await r25.json();
+    const resumen_26 = await r26.json();
 
-    // detalle 2026
     const d26 = await fetch('detalle_2026_light.json');
-    window.detalle_26 = await d26.json();
+    const detalle_26 = await d26.json();
 
-    // detalle 2025 split
-    const d25_p1 = await fetch('detalle_2025_part1.json');
-    const d25_p2 = await fetch('detalle_2025_part2.json');
-    const part1 = await d25_p1.json();
-    const part2 = await d25_p2.json();
+    const p1 = await fetch('detalle_2025_part1.json');
+    const p2 = await fetch('detalle_2025_part2.json');
+
+    const part1 = await p1.json();
+    const part2 = await p2.json();
+
+    window.data25 = resumen_25;
+    window.data26 = resumen_26;
+
     window.detalle_25 = [...part1, ...part2];
+    window.detalle_26 = detalle_26;
 
-    // default dashboard data
-    window.data25 = window.resumen_25;
-    window.data26 = window.resumen_26;
-
-    if (typeof combinarYProcesar === "function"){
-        combinarYProcesar();
+    if(typeof combinarYProcesar === "function"){
+      combinarYProcesar();
     }
 
-    // force dashboard view
-    if (typeof showPage === "function"){
-        const tab = document.querySelector('.main-tab');
-        showPage('dashboard', tab || null);
-    }
+    console.log("Datos cargados OK");
 
-    console.log("APP OK");
-  } catch (e) {
-    console.error("ERROR:", e);
+  }catch(e){
+    console.error("Error carga:", e);
   }
-});
+})();
 </script>
 
 </body>
