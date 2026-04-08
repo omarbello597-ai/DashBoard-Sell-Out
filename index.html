@@ -5,6 +5,8 @@
 <title>Category Management</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body{
     margin:0;
@@ -47,6 +49,10 @@ h1{
     text-align:center;
     color:#00ff9c;
 }
+
+canvas{
+    margin-top:40px;
+}
 </style>
 </head>
 
@@ -73,12 +79,44 @@ h1{
     </div>
 </div>
 
+<h2 style="text-align:center; margin-top:40px;">Ventas por Categoría (2026)</h2>
+
+<canvas id="chartCategorias" style="max-width:600px; margin:auto;"></canvas>
+
 </div>
 
 <script>
 
 function format(num){
     return '$' + Math.round(num).toLocaleString();
+}
+
+function agruparCategoria(data){
+    let map = {};
+    data.forEach(x=>{
+        let cat = x.CATEGORIA || "OTROS";
+        map[cat] = (map[cat] || 0) + (x.VENTA || 0);
+    });
+    return map;
+}
+
+function crearGrafico(d2026){
+
+    const dataCat = agruparCategoria(d2026);
+
+    const labels = Object.keys(dataCat);
+    const values = Object.values(dataCat);
+
+    new Chart(document.getElementById('chartCategorias'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Ventas 2026',
+                data: values
+            }]
+        }
+    });
 }
 
 async function cargarDatos(){
@@ -91,13 +129,9 @@ async function cargarDatos(){
         const d2025 = await r2025.json();
         const d2026 = await r2026.json();
 
-        console.log("DATA 2025", d2025.length);
-        console.log("DATA 2026", d2026.length);
-
         let total2025 = 0;
         let total2026 = 0;
 
-        // 🔥 FOR CLÁSICO (más robusto que reduce)
         for(let i=0; i<d2025.length; i++){
             total2025 += Number(d2025[i].VENTA || 0);
         }
@@ -118,6 +152,9 @@ async function cargarDatos(){
         el.className = growth >= 0 ? 'ok' : 'bad';
 
         document.getElementById('status').innerText = "Dashboard listo 🚀";
+
+        // 🔥 gráfico
+        crearGrafico(d2026);
 
     }catch(e){
         console.error(e);
