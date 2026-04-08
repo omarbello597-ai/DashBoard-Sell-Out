@@ -2,53 +2,54 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Category Management</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Category Management</title>
 
-<!-- 🔥 Chart.js CORRECTO -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 
 <style>
 body{
-    margin:0;
-    font-family:Arial;
-    background:#070b1a;
-    color:white;
+  margin:0;
+  font-family:Arial;
+  background:#08080f;
+  color:#d4d4e8;
 }
+
 h1{
-    text-align:center;
-    color:#FFD700;
-    margin-top:30px;
+  text-align:center;
+  color:#F5C800;
+  margin-top:30px;
 }
 
 .container{
-    padding:20px;
-    max-width:1200px;
-    margin:auto;
+  padding:20px;
+  max-width:1200px;
+  margin:auto;
 }
 
 .kpis{
-    display:flex;
-    gap:20px;
-    justify-content:center;
-    margin-top:30px;
+  display:flex;
+  gap:20px;
+  justify-content:center;
+  margin-top:30px;
 }
 
 .card{
-    background:#11182d;
-    padding:20px;
-    border-radius:12px;
-    width:250px;
-    text-align:center;
+  background:#16161f;
+  border:1px solid #1e1e2c;
+  padding:20px;
+  border-radius:12px;
+  width:250px;
+  text-align:center;
 }
 
-.ok{color:#00ff9c;}
-.bad{color:#ff4d4d;}
+.ok{color:#0DB75B;}
+.bad{color:#E5192C;}
 
 #status{
-    margin-top:20px;
-    text-align:center;
-    color:#00ff9c;
+  text-align:center;
+  margin-top:20px;
+  color:#0DB75B;
 }
 </style>
 </head>
@@ -62,125 +63,101 @@ h1{
 <div id="status">Cargando datos...</div>
 
 <div class="kpis">
-    <div class="card">
-        <h3>Venta 2025</h3>
-        <div id="v2025">$0</div>
-    </div>
-    <div class="card">
-        <h3>Venta 2026</h3>
-        <div id="v2026">$0</div>
-    </div>
-    <div class="card">
-        <h3>Crecimiento</h3>
-        <div id="growth">0%</div>
-    </div>
+  <div class="card">
+    <h3>Venta 2025</h3>
+    <div id="v2025">$0</div>
+  </div>
+  <div class="card">
+    <h3>Venta 2026</h3>
+    <div id="v2026">$0</div>
+  </div>
+  <div class="card">
+    <h3>Crecimiento</h3>
+    <div id="growth">0%</div>
+  </div>
 </div>
 
-<h2 style="text-align:center; margin-top:40px;">Ventas por Categoría (2026)</h2>
-
-<canvas id="chartCategorias" width="400" height="200"></canvas>
+<h2 style="text-align:center;margin-top:40px;">Ventas por Categoría (2026)</h2>
+<canvas id="chartCategorias"></canvas>
 
 </div>
 
 <script>
 
+let DATA = null;
+
 function format(num){
-    return '$' + Math.round(num).toLocaleString();
+  return '$' + Math.round(num).toLocaleString();
 }
 
 function agruparCategoria(data){
-    let map = {};
-    data.forEach(x=>{
-        let cat = x.CATEGORIA || "OTROS";
-        map[cat] = (map[cat] || 0) + (x.VENTA || 0);
-    });
-    return map;
+  let map = {};
+  data.forEach(x=>{
+    let cat = x.CATEGORIA || "OTROS";
+    map[cat] = (map[cat] || 0) + (x.VENTA || 0);
+  });
+  return map;
 }
 
-function crearGrafico(d2026){
+async function loadData(){
 
-    const dataCat = agruparCategoria(d2026);
+  try{
 
-    const labels = Object.keys(dataCat);
-    const values = Object.values(dataCat);
+    const r25 = await fetch('resumen_2025.json?v=' + Date.now());
+    const r26 = await fetch('resumen_2026.json?v=' + Date.now());
 
-    const ctx = document.getElementById('chartCategorias');
+    const d25 = await r25.json();
+    const d26 = await r26.json();
 
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Ventas 2026',
-                data: values
-            }]
+    let total25 = 0;
+    let total26 = 0;
+
+    d25.forEach(x => total25 += x.VENTA || 0);
+    d26.forEach(x => total26 += x.VENTA || 0);
+
+    document.getElementById('v2025').innerText = format(total25);
+    document.getElementById('v2026').innerText = format(total26);
+
+    let growth = total25 === 0 ? 0 : ((total26-total25)/total25)*100;
+
+    let g = document.getElementById('growth');
+    g.innerText = growth.toFixed(1) + '%';
+    g.className = growth >= 0 ? 'ok' : 'bad';
+
+    document.getElementById('status').innerText = "Dashboard listo 🚀";
+
+    const dataCat = agruparCategoria(d26);
+
+    new Chart(document.getElementById('chartCategorias'), {
+      type: 'bar',
+      data: {
+        labels: Object.keys(dataCat),
+        datasets: [{
+          label: 'Ventas 2026',
+          data: Object.values(dataCat)
+        }]
+      },
+      options:{
+        plugins:{
+          legend:{labels:{color:'white'}}
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: { color: 'white' }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: { color: 'white' }
-                },
-                y: {
-                    ticks: { color: 'white' }
-                }
-            }
+        scales:{
+          x:{ticks:{color:'white'}},
+          y:{ticks:{color:'white'}}
         }
+      }
     });
-}
 
-async function cargarDatos(){
+    DATA = {d25,d26};
 
-    try{
-
-        const r2025 = await fetch('resumen_2025.json?v=' + Date.now());
-        const r2026 = await fetch('resumen_2026.json?v=' + Date.now());
-
-        const d2025 = await r2025.json();
-        const d2026 = await r2026.json();
-
-        let total2025 = 0;
-        let total2026 = 0;
-
-        for(let i=0; i<d2025.length; i++){
-            total2025 += Number(d2025[i].VENTA || 0);
-        }
-
-        for(let i=0; i<d2026.length; i++){
-            total2026 += Number(d2026[i].VENTA || 0);
-        }
-
-        document.getElementById('v2025').innerText = format(total2025);
-        document.getElementById('v2026').innerText = format(total2026);
-
-        let growth = total2025 === 0 
-            ? 0 
-            : ((total2026 - total2025) / total2025) * 100;
-
-        let el = document.getElementById('growth');
-        el.innerText = growth.toFixed(1) + '%';
-        el.className = growth >= 0 ? 'ok' : 'bad';
-
-        document.getElementById('status').innerText = "Dashboard listo 🚀";
-
-        // 🔥 ESPERAR render antes de graficar
-        setTimeout(()=>{
-            crearGrafico(d2026);
-        }, 300);
-
-    }catch(e){
-        console.error(e);
-        document.getElementById('status').innerText = "Error cargando datos";
-    }
+  }catch(e){
+    console.error(e);
+    document.getElementById('status').innerText = "Error cargando datos";
+  }
 
 }
 
-cargarDatos();
+loadData();
 
 </script>
 
