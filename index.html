@@ -2616,5 +2616,31 @@ function zShowEmpty(){
 
 // Guard: init only after file loads
 </script>
+
+<script>
+window.addEventListener('load', async () => {
+  try {
+
+    const r25 = await fetch('resumen_2025.json');
+    const r26 = await fetch('resumen_2026.json');
+
+    const resumen_25 = await r25.json();
+    const resumen_26 = await r26.json();
+
+    data25 = resumen_25;
+    data26 = resumen_26;
+
+    console.log("Datos cargados OK");
+
+    if (typeof combinarYProcesar === "function"){
+        combinarYProcesar();
+    }
+
+  } catch (error) {
+    console.error("Error cargando JSON:", error);
+  }
+});
+</script>
+
 </body>
 </html>
