@@ -892,7 +892,7 @@ function getNumDays(){
 }
 
 function combinarYProcesar(){
-  if(!_rows26||!_rows25){ alert('Carga ambos archivos primero'); return; }
+  if(!_rows26||!_rows25){ // alert desactivado; return; }
   const st = document.getElementById('upload-status');
   st.style.color = '#F5C800';
   st.textContent = '⏳ Combinando ' + (_rows26.length+_rows25.length).toLocaleString() + ' filas...';
@@ -2652,7 +2652,6 @@ window.addEventListener('load', async () => {
     }
 
     console.log("APP OK");
-
   } catch (e) {
     console.error("ERROR:", e);
   }
