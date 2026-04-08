@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Sell-Out</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background:#0b0f1a;
+      color:white;
+      font-family: Arial;
+      text-align:center;
+    }
+    h1{
+      color:#FFD700;
+      margin-top:40px;
+    }
+    .ok{color:#00ff9c;}
+  </style>
+</head>
+
+<body>
+
+<h1>CATEGORY MANAGEMENT</h1>
+
+<div id="status">Cargando datos...</div>
+
+<div id="dashboard" style="display:none;">
+  <h2 class="ok">Dashboard listo 🚀</h2>
+  <div id="kpis"></div>
+</div>
+
+<script>
+async function cargarDatos(){
+  try{
+
+    const r25 = await fetch('resumen_2025.json');
+    const r26 = await fetch('resumen_2026.json');
+
+    const data25 = await r25.json();
+    const data26 = await r26.json();
+
+    console.log("Datos cargados OK");
+
+    const total25 = data25.reduce((a,b)=>a + (b.VENTA||0),0);
+    const total26 = data26.reduce((a,b)=>a + (b.VENTA||0),0);
+
+    document.getElementById("status").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+
+    document.getElementById("kpis").innerHTML = `
+      <p>Venta 2025: ${total25.toLocaleString()}</p>
+      <p>Venta 2026: ${total26.toLocaleString()}</p>
+    `;
+
+  }catch(e){
+    document.getElementById("status").innerHTML="Error cargando datos";
+    console.error(e);
+  }
+}
+
+cargarDatos();
+</script>
+
+</body>
+</html>
