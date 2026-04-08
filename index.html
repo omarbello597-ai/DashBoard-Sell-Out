@@ -41,6 +41,12 @@ h1{
 
 .ok{color:#00ff9c;}
 .bad{color:#ff4d4d;}
+
+#status{
+    margin-top:20px;
+    text-align:center;
+    color:#00ff9c;
+}
 </style>
 </head>
 
@@ -55,15 +61,15 @@ h1{
 <div class="kpis">
     <div class="card">
         <h3>Venta 2025</h3>
-        <div id="v2025"></div>
+        <div id="v2025">$0</div>
     </div>
     <div class="card">
         <h3>Venta 2026</h3>
-        <div id="v2026"></div>
+        <div id="v2026">$0</div>
     </div>
     <div class="card">
         <h3>Crecimiento</h3>
-        <div id="growth"></div>
+        <div id="growth">0%</div>
     </div>
 </div>
 
@@ -71,6 +77,25 @@ h1{
 
 <script>
 
+// 🔥 Función inteligente para detectar el valor correcto
+function getValor(obj){
+    return obj.VALOR 
+        || obj.valor 
+        || obj.venta 
+        || obj.sales 
+        || obj.total 
+        || obj.VALOR_AÑO_ACTUAL
+        || obj.VALOR_ANO_ACTUAL
+        || obj.valor_actual
+        || 0;
+}
+
+// 🔥 Formato dinero
+function format(num){
+    return '$' + num.toLocaleString();
+}
+
+// 🔥 Carga principal
 async function cargarDatos(){
 
     try{
@@ -84,29 +109,32 @@ async function cargarDatos(){
         let total2025 = 0;
         let total2026 = 0;
 
-        d2025.forEach(x => total2025 += x.VALOR || 0);
-        d2026.forEach(x => total2026 += x.VALOR || 0);
+        d2025.forEach(x => total2025 += getValor(x));
+        d2026.forEach(x => total2026 += getValor(x));
 
         document.getElementById('v2025').innerText = format(total2025);
         document.getElementById('v2026').innerText = format(total2026);
 
-        let growth = ((total2026-total2025)/total2025)*100;
+        let growth = total2025 === 0 
+            ? 0 
+            : ((total2026 - total2025) / total2025) * 100;
 
         let el = document.getElementById('growth');
-        el.innerText = growth.toFixed(1)+'%';
+        el.innerText = growth.toFixed(1) + '%';
         el.className = growth >= 0 ? 'ok' : 'bad';
 
         document.getElementById('status').innerText = "Dashboard listo 🚀";
+
+        console.log("Datos cargados OK", {
+            total2025,
+            total2026
+        });
 
     }catch(e){
         document.getElementById('status').innerText = "Error cargando JSON";
         console.error(e);
     }
 
-}
-
-function format(num){
-    return '$' + num.toLocaleString();
 }
 
 cargarDatos();
