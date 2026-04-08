@@ -78,25 +78,33 @@ h1{
 <script>
 
 function format(num){
-    return '$' + num.toLocaleString();
+    return '$' + Math.round(num).toLocaleString();
 }
 
 async function cargarDatos(){
 
     try{
 
-        const r2025 = await fetch('resumen_2025.json');
-        const r2026 = await fetch('resumen_2026.json');
+        const r2025 = await fetch('resumen_2025.json?v=' + Date.now());
+        const r2026 = await fetch('resumen_2026.json?v=' + Date.now());
 
         const d2025 = await r2025.json();
         const d2026 = await r2026.json();
 
+        console.log("DATA 2025", d2025.length);
+        console.log("DATA 2026", d2026.length);
+
         let total2025 = 0;
         let total2026 = 0;
 
-        // 🔥 USAMOS EL CAMPO CORRECTO
-        d2025.forEach(x => total2025 += (x.VENTA || 0));
-        d2026.forEach(x => total2026 += (x.VENTA || 0));
+        // 🔥 FOR CLÁSICO (más robusto que reduce)
+        for(let i=0; i<d2025.length; i++){
+            total2025 += Number(d2025[i].VENTA || 0);
+        }
+
+        for(let i=0; i<d2026.length; i++){
+            total2026 += Number(d2026[i].VENTA || 0);
+        }
 
         document.getElementById('v2025').innerText = format(total2025);
         document.getElementById('v2026').innerText = format(total2026);
@@ -111,11 +119,9 @@ async function cargarDatos(){
 
         document.getElementById('status').innerText = "Dashboard listo 🚀";
 
-        console.log("OK", {total2025, total2026});
-
     }catch(e){
-        document.getElementById('status').innerText = "Error cargando JSON";
         console.error(e);
+        document.getElementById('status').innerText = "Error cargando datos";
     }
 
 }
