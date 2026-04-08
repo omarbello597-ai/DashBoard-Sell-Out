@@ -7,64 +7,40 @@
 
 <style>
 body{
-  background:#0b0f1a;
-  color:white;
-  font-family:Arial;
-  margin:0;
-  text-align:center;
+    margin:0;
+    font-family:Arial;
+    background:#070b1a;
+    color:white;
 }
-
 h1{
-  color:#FFD700;
-  margin-top:30px;
+    text-align:center;
+    color:#FFD700;
+    margin-top:30px;
 }
 
 .container{
-  display:flex;
-  justify-content:center;
-  margin-top:50px;
-  gap:40px;
-}
-
-.box{
-  border:2px dashed #444;
-  padding:30px;
-  width:200px;
-  border-radius:10px;
-}
-
-.ok{
-  border-color:#00ff9c;
-}
-
-.check{
-  font-size:30px;
-  color:#00ff9c;
-}
-
-.status{
-  margin-top:20px;
-  color:#00ff9c;
-}
-
-#dashboard{
-  display:none;
-  margin-top:40px;
+    padding:20px;
+    max-width:1200px;
+    margin:auto;
 }
 
 .kpis{
-  display:flex;
-  justify-content:center;
-  gap:40px;
+    display:flex;
+    gap:20px;
+    justify-content:center;
+    margin-top:30px;
 }
 
 .card{
-  background:#111827;
-  padding:20px;
-  border-radius:10px;
-  width:200px;
+    background:#11182d;
+    padding:20px;
+    border-radius:12px;
+    width:250px;
+    text-align:center;
 }
 
+.ok{color:#00ff9c;}
+.bad{color:#ff4d4d;}
 </style>
 </head>
 
@@ -72,105 +48,68 @@ h1{
 
 <h1>CATEGORY MANAGEMENT</h1>
 
-<div id="loader">
-
 <div class="container">
 
-  <div class="box ok">
-    <div class="check">✔</div>
-    <p>EXCEL 2026</p>
-    <small id="rows2026">Cargando...</small>
-  </div>
+<div id="status">Cargando datos...</div>
 
-  <div class="box ok">
-    <div class="check">✔</div>
-    <p>EXCEL 2025</p>
-    <small id="rows2025">Cargando...</small>
-  </div>
-
-  <div class="box ok">
-    <div class="check">✔</div>
-    <p>INVENTARIO</p>
-    <small>Integrado</small>
-  </div>
-
+<div class="kpis">
+    <div class="card">
+        <h3>Venta 2025</h3>
+        <div id="v2025"></div>
+    </div>
+    <div class="card">
+        <h3>Venta 2026</h3>
+        <div id="v2026"></div>
+    </div>
+    <div class="card">
+        <h3>Crecimiento</h3>
+        <div id="growth"></div>
+    </div>
 </div>
-
-<div class="status" id="status"></div>
-
-</div>
-
-<div id="dashboard">
-
-  <h2 style="color:#00ff9c;">Dashboard listo 🚀</h2>
-
-  <div class="kpis">
-    <div class="card">
-      <h3>Venta 2025</h3>
-      <div id="kpi2025"></div>
-    </div>
-
-    <div class="card">
-      <h3>Venta 2026</h3>
-      <div id="kpi2026"></div>
-    </div>
-
-    <div class="card">
-      <h3>Crecimiento</h3>
-      <div id="kpiGrowth"></div>
-    </div>
-  </div>
 
 </div>
 
 <script>
 
-let data25 = [];
-let data26 = [];
+async function cargarDatos(){
 
-async function cargarTodo(){
+    try{
 
-  const r25 = await fetch('resumen_2025.json');
-  const r26 = await fetch('resumen_2026.json');
+        const r2025 = await fetch('resumen_2025.json');
+        const r2026 = await fetch('resumen_2026.json');
 
-  data25 = await r25.json();
-  data26 = await r26.json();
+        const d2025 = await r2025.json();
+        const d2026 = await r2026.json();
 
-  // Simulación UI original
-  document.getElementById("rows2025").innerText =
-    data25.length.toLocaleString() + " filas cargadas";
+        let total2025 = 0;
+        let total2026 = 0;
 
-  document.getElementById("rows2026").innerText =
-    data26.length.toLocaleString() + " filas cargadas";
+        d2025.forEach(x => total2025 += x.VALOR || 0);
+        d2026.forEach(x => total2026 += x.VALOR || 0);
 
-  document.getElementById("status").innerText =
-    (data25.length + data26.length).toLocaleString() +
-    " filas - listo";
+        document.getElementById('v2025').innerText = format(total2025);
+        document.getElementById('v2026').innerText = format(total2026);
 
-  // KPIs
-  const total25 = data25.reduce((a,b)=>a+(b.VENTA||0),0);
-  const total26 = data26.reduce((a,b)=>a+(b.VENTA||0),0);
+        let growth = ((total2026-total2025)/total2025)*100;
 
-  const growth = ((total26 - total25)/total25)*100;
+        let el = document.getElementById('growth');
+        el.innerText = growth.toFixed(1)+'%';
+        el.className = growth >= 0 ? 'ok' : 'bad';
 
-  document.getElementById("kpi2025").innerText =
-    total25.toLocaleString();
+        document.getElementById('status').innerText = "Dashboard listo 🚀";
 
-  document.getElementById("kpi2026").innerText =
-    total26.toLocaleString();
-
-  document.getElementById("kpiGrowth").innerText =
-    growth.toFixed(1) + "%";
-
-  // transición automática
-  setTimeout(()=>{
-    document.getElementById("loader").style.display="none";
-    document.getElementById("dashboard").style.display="block";
-  }, 1500);
+    }catch(e){
+        document.getElementById('status').innerText = "Error cargando JSON";
+        console.error(e);
+    }
 
 }
 
-cargarTodo();
+function format(num){
+    return '$' + num.toLocaleString();
+}
+
+cargarDatos();
 
 </script>
 
