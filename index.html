@@ -5,7 +5,8 @@
 <title>Category Management</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- 🔥 Chart.js CORRECTO -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 
 <style>
 body{
@@ -49,10 +50,6 @@ h1{
     text-align:center;
     color:#00ff9c;
 }
-
-canvas{
-    margin-top:40px;
-}
 </style>
 </head>
 
@@ -81,7 +78,7 @@ canvas{
 
 <h2 style="text-align:center; margin-top:40px;">Ventas por Categoría (2026)</h2>
 
-<canvas id="chartCategorias" style="max-width:600px; margin:auto;"></canvas>
+<canvas id="chartCategorias" width="400" height="200"></canvas>
 
 </div>
 
@@ -107,7 +104,9 @@ function crearGrafico(d2026){
     const labels = Object.keys(dataCat);
     const values = Object.values(dataCat);
 
-    new Chart(document.getElementById('chartCategorias'), {
+    const ctx = document.getElementById('chartCategorias');
+
+    new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -115,6 +114,22 @@ function crearGrafico(d2026){
                 label: 'Ventas 2026',
                 data: values
             }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: { color: 'white' }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: 'white' }
+                },
+                y: {
+                    ticks: { color: 'white' }
+                }
+            }
         }
     });
 }
@@ -153,8 +168,10 @@ async function cargarDatos(){
 
         document.getElementById('status').innerText = "Dashboard listo 🚀";
 
-        // 🔥 gráfico
-        crearGrafico(d2026);
+        // 🔥 ESPERAR render antes de graficar
+        setTimeout(()=>{
+            crearGrafico(d2026);
+        }, 300);
 
     }catch(e){
         console.error(e);
