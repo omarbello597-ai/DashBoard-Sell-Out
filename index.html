@@ -11,149 +11,219 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#08080f;
-  color:#d4d4e8;
+  background:#070b17;
+  color:white;
 }
 
-h1{
-  text-align:center;
-  color:#F5C800;
-  margin-top:30px;
+/* HEADER */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 30px;
+  border-bottom:1px solid #111;
 }
 
-.container{
-  padding:20px;
-  max-width:1200px;
-  margin:auto;
+.logo{
+  color:#FFD700;
+  font-weight:bold;
 }
 
+.menu{
+  display:flex;
+  gap:20px;
+}
+
+.menu div{
+  cursor:pointer;
+  opacity:.7;
+}
+
+.menu .active{
+  opacity:1;
+  border-bottom:2px solid #FFD700;
+}
+
+/* FILTROS */
+.filters{
+  padding:20px 30px;
+}
+
+.months button{
+  background:#111827;
+  border:none;
+  color:white;
+  padding:6px 12px;
+  margin-right:5px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.months .active{
+  background:#FFD700;
+  color:black;
+}
+
+/* KPIs */
 .kpis{
   display:flex;
   gap:20px;
-  justify-content:center;
-  margin-top:30px;
+  padding:20px 30px;
 }
 
 .card{
-  background:#16161f;
-  border:1px solid #1e1e2c;
+  flex:1;
+  background:#111827;
   padding:20px;
   border-radius:12px;
-  width:250px;
-  text-align:center;
 }
 
-.ok{color:#0DB75B;}
-.bad{color:#E5192C;}
+.title{
+  font-size:12px;
+  opacity:.6;
+}
 
-#status{
-  text-align:center;
-  margin-top:20px;
-  color:#0DB75B;
+.value{
+  font-size:24px;
+  margin-top:10px;
+}
+
+.bad{color:#ff3b3b;}
+.good{color:#00ff9c;}
+
+/* CHART */
+.chart{
+  padding:30px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>CATEGORY MANAGEMENT</h1>
-
-<div class="container">
-
-<div id="status">Cargando datos...</div>
-
-<div class="kpis">
-  <div class="card">
-    <h3>Venta 2025</h3>
-    <div id="v2025">$0</div>
-  </div>
-  <div class="card">
-    <h3>Venta 2026</h3>
-    <div id="v2026">$0</div>
-  </div>
-  <div class="card">
-    <h3>Crecimiento</h3>
-    <div id="growth">0%</div>
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">CATEGORY MANAGEMENT</div>
+  <div class="menu">
+    <div class="active">Dashboard</div>
+    <div>PDV</div>
+    <div>Segmentos</div>
   </div>
 </div>
 
-<h2 style="text-align:center;margin-top:40px;">Ventas por Categoría (2026)</h2>
-<canvas id="chartCategorias"></canvas>
+<!-- FILTROS -->
+<div class="filters">
+  <div class="months">
+    <button class="active">Ene</button>
+    <button class="active">Feb</button>
+    <button class="active">Mar</button>
+    <button class="active">Abr</button>
+  </div>
+</div>
 
+<!-- KPIs -->
+<div class="kpis">
+  <div class="card">
+    <div class="title">VALOR AÑO ACTUAL</div>
+    <div id="v2026" class="value">$0</div>
+  </div>
+
+  <div class="card">
+    <div class="title">VAR% VALOR</div>
+    <div id="growth" class="value">0%</div>
+  </div>
+
+  <div class="card">
+    <div class="title">UNIDADES</div>
+    <div id="units" class="value">0</div>
+  </div>
+</div>
+
+<!-- CHART -->
+<div class="chart">
+  <canvas id="chart"></canvas>
 </div>
 
 <script>
 
-let DATA = null;
+let data25 = [];
+let data26 = [];
 
-function format(num){
-  return '$' + Math.round(num).toLocaleString();
-}
-
-function agruparCategoria(data){
-  let map = {};
-  data.forEach(x=>{
-    let cat = x.CATEGORIA || "OTROS";
-    map[cat] = (map[cat] || 0) + (x.VENTA || 0);
-  });
-  return map;
+function formatMoney(n){
+  return '$' + Math.round(n).toLocaleString();
 }
 
 async function loadData(){
 
-  try{
+  const r25 = await fetch('resumen_2025.json?v=' + Date.now());
+  const r26 = await fetch('resumen_2026.json?v=' + Date.now());
 
-    const r25 = await fetch('resumen_2025.json?v=' + Date.now());
-    const r26 = await fetch('resumen_2026.json?v=' + Date.now());
+  data25 = await r25.json();
+  data26 = await r26.json();
 
-    const d25 = await r25.json();
-    const d26 = await r26.json();
+  let total25 = 0;
+  let total26 = 0;
+  let units = 0;
 
-    let total25 = 0;
-    let total26 = 0;
+  data25.forEach(x=> total25 += x.VENTA || 0);
+  data26.forEach(x=>{
+    total26 += x.VENTA || 0;
+    units += x.UNIDADES || 0;
+  });
 
-    d25.forEach(x => total25 += x.VENTA || 0);
-    d26.forEach(x => total26 += x.VENTA || 0);
+  const growth = ((total26-total25)/total25)*100;
 
-    document.getElementById('v2025').innerText = format(total25);
-    document.getElementById('v2026').innerText = format(total26);
+  document.getElementById('v2026').innerText = formatMoney(total26);
 
-    let growth = total25 === 0 ? 0 : ((total26-total25)/total25)*100;
+  const g = document.getElementById('growth');
+  g.innerText = growth.toFixed(1)+'%';
+  g.className = "value " + (growth>=0 ? "good" : "bad");
 
-    let g = document.getElementById('growth');
-    g.innerText = growth.toFixed(1) + '%';
-    g.className = growth >= 0 ? 'ok' : 'bad';
+  document.getElementById('units').innerText =
+    Math.round(units/1000) + 'K';
 
-    document.getElementById('status').innerText = "Dashboard listo 🚀";
+  buildChart();
 
-    const dataCat = agruparCategoria(d26);
+}
 
-    new Chart(document.getElementById('chartCategorias'), {
-      type: 'bar',
-      data: {
-        labels: Object.keys(dataCat),
-        datasets: [{
-          label: 'Ventas 2026',
-          data: Object.values(dataCat)
-        }]
-      },
-      options:{
-        plugins:{
-          legend:{labels:{color:'white'}}
-        },
-        scales:{
-          x:{ticks:{color:'white'}},
-          y:{ticks:{color:'white'}}
-        }
-      }
+function buildChart(){
+
+  let meses = ["ene","feb","mar","abr"];
+  let v25 = [];
+  let v26 = [];
+
+  meses.forEach(m=>{
+    let t25 = 0;
+    let t26 = 0;
+
+    data25.forEach(x=>{
+      if(x.MES === m) t25 += x.VENTA || 0;
     });
 
-    DATA = {d25,d26};
+    data26.forEach(x=>{
+      if(x.MES === m) t26 += x.VENTA || 0;
+    });
 
-  }catch(e){
-    console.error(e);
-    document.getElementById('status').innerText = "Error cargando datos";
-  }
+    v25.push(t25);
+    v26.push(t26);
+  });
+
+  new Chart(document.getElementById('chart'), {
+    type:'line',
+    data:{
+      labels:["Ene","Feb","Mar","Abr"],
+      datasets:[
+        {label:"2025", data:v25, borderColor:"#ff3b3b"},
+        {label:"2026", data:v26, borderColor:"#3b82f6"}
+      ]
+    },
+    options:{
+      plugins:{legend:{labels:{color:'white'}}},
+      scales:{
+        x:{ticks:{color:'white'}},
+        y:{ticks:{color:'white'}}
+      }
+    }
+  });
 
 }
 
