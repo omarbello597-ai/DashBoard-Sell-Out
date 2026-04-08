@@ -11,7 +11,7 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#070b17;
+  background:#050816;
   color:white;
 }
 
@@ -19,14 +19,14 @@ body{
 .header{
   display:flex;
   justify-content:space-between;
-  align-items:center;
-  padding:15px 30px;
+  padding:15px 25px;
   border-bottom:1px solid #111;
 }
 
 .logo{
   color:#FFD700;
   font-weight:bold;
+  font-size:18px;
 }
 
 .menu{
@@ -36,7 +36,7 @@ body{
 
 .menu div{
   cursor:pointer;
-  opacity:.7;
+  opacity:.6;
 }
 
 .menu .active{
@@ -44,63 +44,72 @@ body{
   border-bottom:2px solid #FFD700;
 }
 
-/* FILTROS */
-.filters{
-  padding:20px 30px;
+/* TOP BUTTONS */
+.top-buttons{
+  display:flex;
+  gap:10px;
+  padding:15px 25px;
 }
 
-.months button{
+.top-buttons button{
   background:#111827;
   border:none;
-  color:white;
   padding:6px 12px;
-  margin-right:5px;
+  color:white;
   border-radius:6px;
-  cursor:pointer;
 }
 
-.months .active{
-  background:#FFD700;
-  color:black;
+.top-buttons .active{
+  background:#2563eb;
 }
 
 /* KPIs */
 .kpis{
   display:flex;
-  gap:20px;
-  padding:20px 30px;
+  gap:15px;
+  padding:0 25px;
 }
 
 .card{
   flex:1;
-  background:#111827;
-  padding:20px;
-  border-radius:12px;
+  background:#0f172a;
+  padding:15px;
+  border-radius:10px;
+  border-bottom:3px solid #1e293b;
 }
 
-.title{
-  font-size:12px;
+.card h4{
+  margin:0;
+  font-size:11px;
   opacity:.6;
 }
 
-.value{
-  font-size:24px;
-  margin-top:10px;
+.card h2{
+  margin:5px 0;
 }
 
 .bad{color:#ff3b3b;}
 .good{color:#00ff9c;}
 
-/* CHART */
-.chart{
-  padding:30px;
+/* CHARTS */
+.charts{
+  display:flex;
+  gap:20px;
+  padding:20px 25px;
 }
+
+.chart-box{
+  flex:1;
+  background:#0f172a;
+  padding:15px;
+  border-radius:10px;
+}
+
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <div class="header">
   <div class="logo">CATEGORY MANAGEMENT</div>
   <div class="menu">
@@ -110,124 +119,129 @@ body{
   </div>
 </div>
 
-<!-- FILTROS -->
-<div class="filters">
-  <div class="months">
-    <button class="active">Ene</button>
-    <button class="active">Feb</button>
-    <button class="active">Mar</button>
-    <button class="active">Abr</button>
-  </div>
+<div class="top-buttons">
+  <button class="active">HOGAR</button>
+  <button>AUTOS</button>
+  <button>TOTAL</button>
 </div>
 
-<!-- KPIs -->
 <div class="kpis">
   <div class="card">
-    <div class="title">VALOR AÑO ACTUAL</div>
-    <div id="v2026" class="value">$0</div>
+    <h4>VALOR AÑO ACTUAL</h4>
+    <h2 id="val">$0</h2>
   </div>
 
   <div class="card">
-    <div class="title">VAR% VALOR</div>
-    <div id="growth" class="value">0%</div>
+    <h4>VAR% VALOR</h4>
+    <h2 id="var">0%</h2>
   </div>
 
   <div class="card">
-    <div class="title">UNIDADES</div>
-    <div id="units" class="value">0</div>
+    <h4>UNIDADES</h4>
+    <h2 id="units">0</h2>
+  </div>
+
+  <div class="card">
+    <h4>SEGMENTOS</h4>
+    <h2 id="seg">0</h2>
   </div>
 </div>
 
-<!-- CHART -->
-<div class="chart">
-  <canvas id="chart"></canvas>
+<div class="charts">
+  <div class="chart-box">
+    <canvas id="chartValor"></canvas>
+  </div>
+  <div class="chart-box">
+    <canvas id="chartUnits"></canvas>
+  </div>
 </div>
 
 <script>
 
-let data25 = [];
-let data26 = [];
+let d25=[], d26=[];
 
-function formatMoney(n){
-  return '$' + Math.round(n).toLocaleString();
-}
+async function load(){
 
-async function loadData(){
+  d25 = await (await fetch('resumen_2025.json?v='+Date.now())).json();
+  d26 = await (await fetch('resumen_2026.json?v='+Date.now())).json();
 
-  const r25 = await fetch('resumen_2025.json?v=' + Date.now());
-  const r26 = await fetch('resumen_2026.json?v=' + Date.now());
+  let t25=0,t26=0,u=0;
+  let segSet = new Set();
 
-  data25 = await r25.json();
-  data26 = await r26.json();
-
-  let total25 = 0;
-  let total26 = 0;
-  let units = 0;
-
-  data25.forEach(x=> total25 += x.VENTA || 0);
-  data26.forEach(x=>{
-    total26 += x.VENTA || 0;
-    units += x.UNIDADES || 0;
+  d25.forEach(x=> t25+=x.VENTA||0);
+  d26.forEach(x=>{
+    t26+=x.VENTA||0;
+    u+=x.UNIDADES||0;
+    segSet.add(x.SEGMENTO);
   });
 
-  const growth = ((total26-total25)/total25)*100;
+  let growth = ((t26-t25)/t25)*100;
 
-  document.getElementById('v2026').innerText = formatMoney(total26);
+  document.getElementById('val').innerText = '$'+Math.round(t26).toLocaleString();
+  document.getElementById('units').innerText = Math.round(u/1000)+'K';
+  document.getElementById('seg').innerText = segSet.size;
 
-  const g = document.getElementById('growth');
+  let g = document.getElementById('var');
   g.innerText = growth.toFixed(1)+'%';
-  g.className = "value " + (growth>=0 ? "good" : "bad");
+  g.className = growth>=0?'good':'bad';
 
-  document.getElementById('units').innerText =
-    Math.round(units/1000) + 'K';
-
-  buildChart();
+  buildCharts();
 
 }
 
-function buildChart(){
+function buildCharts(){
 
   let meses = ["ene","feb","mar","abr"];
-  let v25 = [];
-  let v26 = [];
+  let v25=[],v26=[],u25=[],u26=[];
 
   meses.forEach(m=>{
-    let t25 = 0;
-    let t26 = 0;
+    let t25=0,t26=0,uu25=0,uu26=0;
 
-    data25.forEach(x=>{
-      if(x.MES === m) t25 += x.VENTA || 0;
+    d25.forEach(x=>{
+      if(x.MES===m){
+        t25+=x.VENTA||0;
+        uu25+=x.UNIDADES||0;
+      }
     });
 
-    data26.forEach(x=>{
-      if(x.MES === m) t26 += x.VENTA || 0;
+    d26.forEach(x=>{
+      if(x.MES===m){
+        t26+=x.VENTA||0;
+        uu26+=x.UNIDADES||0;
+      }
     });
 
     v25.push(t25);
     v26.push(t26);
+    u25.push(uu25);
+    u26.push(uu26);
   });
 
-  new Chart(document.getElementById('chart'), {
+  new Chart(document.getElementById('chartValor'),{
     type:'line',
     data:{
       labels:["Ene","Feb","Mar","Abr"],
       datasets:[
-        {label:"2025", data:v25, borderColor:"#ff3b3b"},
-        {label:"2026", data:v26, borderColor:"#3b82f6"}
+        {label:'2025', data:v25, borderColor:'#ff3b3b'},
+        {label:'2026', data:v26, borderColor:'#3b82f6'}
       ]
-    },
-    options:{
-      plugins:{legend:{labels:{color:'white'}}},
-      scales:{
-        x:{ticks:{color:'white'}},
-        y:{ticks:{color:'white'}}
-      }
+    }
+  });
+
+  new Chart(document.getElementById('chartUnits'),{
+    type:'line',
+    data:{
+      labels:["Ene","Feb","Mar","Abr"],
+      datasets:[
+        {label:'2025', data:u25, borderColor:'#ff3b3b'},
+        {label:'2026', data:u26, borderColor:'#3b82f6'}
+      ]
     }
   });
 
 }
 
-loadData();
+load();
 
 </script>
 
